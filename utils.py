@@ -1,3 +1,7 @@
+# Use this guy to run your first model: https://www.kaggle.com/keegil/keras-u-net-starter-lb-0-277
+# Use this to try to do some preprocessing: https://github.com/orobix/retina-unet/blob/master/lib/pre_processing.py
+
+
 import csv
 import os
 
