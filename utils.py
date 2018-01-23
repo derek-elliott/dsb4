@@ -3,17 +3,24 @@
 
 import os
 
+import numpy as np
+
 import cv2
 import matplotlib.pyplot as plt
-import numpy as np
 import progressbar
+from scipy import ndimage as ndi
+from skimage.exposure import adjust_gamma, equalize_adapthist
+from skimage.feature import peak_local_max
 from skimage.io import imread, imshow
-from skimage.morphology import label
+from skimage.morphology import label, watershed
 from skimage.transform import resize
 
 
 class Images:
     def __init__(self, path, height, width, channels, is_training=True):
+        # Ignore divide by 0 warnings
+        np.seterr(divide='ignore', invalid='ignore')
+
         self.path = path
         self.height = height
         self.width = width
@@ -56,31 +63,15 @@ class Images:
                 self.masks[n] = mask
 
     def clahe_equalize(self):
-        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
         imgs_equalized = np.empty(self.images.shape)
-        for i in range(self.images.shape[0]):
-            imgs_equalized[i, 0] = clahe.apply(
-                np.array(self.images[i, 0], dtype=np.uint8))
+        for i, image in enumerate(self.images):
+            imgs_equalized[i] = equalize_adapthist(image)
         self.images = imgs_equalized
 
-    def normalize_images(self):
-        imgs_normalized = np.empty(self.images.shape)
-        imgs_std = np.std(self.images)
-        imgs_mean = np.mean(self.images)
-        imgs_normalized = (self.images - imgs_mean) / imgs_std
-        for image in imgs_normalized:
-            image = ((image - np.min(image)) /
-                     (np.max(image) - np.min(image))) * 255
-        self.images = imgs_normalized
-
-    def adjust_gamma(self, gamma=1.0):
-        inv_gamma = 1.0 / gamma
-        table = np.array([((i / 255.0) ** inv_gamma) *
-                          255 for i in np.arange(0, 256)]).astype("uint8")
+    def modify_gamma(self, gamma=1.0):
         new_imgs = np.empty(self.images.shape)
-        for i in range(self.images.shape[0]):
-            new_imgs[i, 0] = cv2.LUT(
-                np.array(self.images[i, 0], dtype=np.uint8), table)
+        for i, image in enumerate(self.images):
+            new_imgs[i] = adjust_gamma(image, gamma=gamma)
         self.images = new_imgs
 
     def show_image(self, index):
@@ -112,15 +103,30 @@ class Images:
         return run_lengths
 
     def _prob_to_rles(self, index, cutoff=0.5):
-        lab_img = label(self.predictions[index] > cutoff)
-        for i in range(1, lab_img.max() + 1):
-            yield self._rle_encode(lab_img == i)
+        lab_img = list(self._watershed_segment(
+            self.predictions[index] > cutoff))
+        for img in lab_img:
+            yield self._rle_encode(img)
 
-    def generate_submission(self, file_name):
+    # This is really shitty at separating masks for run encoding.
+    def _watershed_segment(self, image):
+        distance = ndi.distance_transform_edt(image)
+        local_maxi = peak_local_max(
+            distance, labels=image, indices=False)
+        markers = ndi.label(local_maxi, structure=np.ones((3, 3)))[0]
+        labels = watershed(-distance, markers, mask=image)
+        for label in np.unique(labels):
+            if label == 0:
+                continue
+            mask = np.zeros(image.shape, dtype='uint8')
+            mask[labels == label] = 1
+            yield mask
+
+    def generate_submission(self, cutoff, file_name):
         new_image_ids = []
         rles = []
         for n, image_id in enumerate(self.image_ids):
-            rle = list(self._prob_to_rles(n))
+            rle = list(self._prob_to_rles(n, cutoff))
             rles.extend(rle)
             new_image_ids.extend([image_id] * len(rle))
         with open(os.path.join('submissions', f'{file_name}.csv'), 'w') as f:

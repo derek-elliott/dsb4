@@ -1,7 +1,9 @@
 import os
+import random
 from datetime import datetime
 
 import numpy as np
+
 import tensorflow as tf
 from keras import backend as K
 from keras.callbacks import EarlyStopping, ModelCheckpoint
@@ -12,7 +14,6 @@ from keras.layers.core import Dropout, Lambda
 from keras.layers.merge import concatenate
 from keras.layers.pooling import MaxPooling2D
 from keras.models import Model, load_model
-
 from utils import Images
 
 
@@ -102,7 +103,7 @@ def build_model(height, width, channels, print_summary=True):
     return model
 
 
-def train_model(unet_model, images):
+def train_model(model, images):
     earlystopper = EarlyStopping(patience=5, verbose=1)
     now = datetime.now().strftime('%Y-%m-%d-%H%M%S')
     checkpoint = f'models/model-dsbowl{now}.h5'
@@ -122,8 +123,6 @@ def model_predict(checkpoint, images):
     return model.predict(images, verbose=1)
 
 # Define IoU metric
-
-
 def mean_iou(y_true, y_pred):
     prec = []
     for t in np.arange(0.5, 1.0, 0.05):
@@ -133,40 +132,51 @@ def mean_iou(y_true, y_pred):
         with tf.control_dependencies([up_opt]):
             score = tf.identity(score)
         prec.append(score)
-    return K.mean(K.stack(prec), axis=0)
+    return K.mean(K.stack(prec))
 
 
-if __name__ == '__main__':
+def train(width, height, channels, train_path):
     bad_images = ['58c593bcb98386e7fd42a1d34e291db93477624b164e83ab2afa3caa90d1d921',
                   '12aeefb1b522b283819b12e4cfaf6b13c1264c0aadac3412b4edd2ace304cb40',
                   '7b38c9173ebe69b4c6ba7e703c0c27f39305d9b2910f46405993d2ea7a963b80']
-    width = 128
-    height = 128
-    channels = 3
 
-    checkpoint = 'models/model-dsbowl2018-01-22-182422.h5'
+    train_images = Images(train_path, height, width, channels)
+    train_images.load_images(bad_images=bad_images)
 
-    # train_path = os.path.join('data', 'stage1_train')
-    test_path = os.path.join('data', 'stage1_test')
-    # train_images = Images(train_path, height, width, channels)
+    # Pre-process
+    # train_images.clahe_equalize()
+    # train_images.modify_gamma(gamma=0.8)
+
+    model = build_model(height, width, channels, print_summary=False)
+    checkpoint = train_model(model, train_images)
+
+
+def predict(width, height, channels, test_path, checkpoint, submission_name):
     test_images = Images(test_path, height, width, channels, is_training=False)
 
-    # train_images.load_images(bad_images=bad_images)
     test_images.load_images()
 
     # Pre-process
-    # train_images.normalize_images()
-    # train_images.clahe_equalize()
-    # train_images.adjust_gamma()
+    # test_images.clahe_equalize()
+    # test_images.modify_gamma(gamma=0.8)
 
-    test_images.normalize_images()
-    test_images.clahe_equalize()
-    test_images.adjust_gamma()
-
-    # model = build_model(height, width, channels, print_summary=False)
-    # checkpoint = train_model(model, train_images)
     test_images.predictions = model_predict(checkpoint, test_images.images)
 
     test_images.upsample_masks()
 
-    test_images.generate_submission('sub-dsb2018-2')
+    test_images.generate_submission(0.85, submission_name)
+
+
+if __name__ == '__main__':
+    width = 128
+    height = 128
+    channels = 3
+
+    checkpoint = 'models/model-dsbowl2018-01-23-002853.h5'
+    submission_name = 'sub-dsb2018-3'
+
+    train_path = os.path.join('data', 'stage1_train')
+    test_path = os.path.join('data', 'stage1_test')
+
+    # train(width, height, channels, train_path)
+    predict(width, height, channels, test_path, checkpoint, submission_name)
