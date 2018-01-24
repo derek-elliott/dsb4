@@ -74,12 +74,12 @@ class Images:
             new_imgs[i] = adjust_gamma(image, gamma=gamma)
         self.images = new_imgs
 
-    def show_image(self, index):
-        imshow(self.images[index])
-        plt.show()
-
-    def show_mask(self, index):
-        imshow(np.squeeze(self.masks[index]))
+    def show_image_and_mask(self, index):
+        fig = plt.figure()
+        a = fig.add_subplot(1,2,1)
+        img = imshow(self.images[index])
+        a = fig.add_subplot(1,2,2)
+        img = imshow(np.squeeze(self.masks[index]))
         plt.show()
 
     def upsample_masks(self):
@@ -111,16 +111,27 @@ class Images:
     # This is really shitty at separating masks for run encoding.
     def _watershed_segment(self, image):
         distance = ndi.distance_transform_edt(image)
-        local_maxi = peak_local_max(
-            distance, labels=image, indices=False)
-        markers = ndi.label(local_maxi, structure=np.ones((3, 3)))[0]
+        local_max = peak_local_max(
+            distance, min_distance=3, labels=image, indices=False)
+        markers = ndi.label(local_max, structure=np.ones((3, 3)))[0]
         labels = watershed(-distance, markers, mask=image)
         for label in np.unique(labels):
             if label == 0:
                 continue
             mask = np.zeros(image.shape, dtype='uint8')
             mask[labels == label] = 1
+            # self._display_images(image, distance, mask)
             yield mask
+
+    def _display_images(self, image1, image2, image3):
+        fig = plt.figure()
+        a = fig.add_subplot(1,3,1)
+        img = imshow(image1)
+        a = fig.add_subplot(1,3,2)
+        img = imshow(image2)
+        a = fig.add_subplot(1,3,3)
+        img = imshow(image3)
+        plt.show()
 
     def generate_submission(self, cutoff, file_name):
         new_image_ids = []

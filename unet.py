@@ -164,7 +164,7 @@ def predict(width, height, channels, test_path, checkpoint, submission_name):
 
     test_images.upsample_masks()
 
-    test_images.generate_submission(0.85, submission_name)
+    test_images.generate_submission(0.50, submission_name)
 
 
 if __name__ == '__main__':
@@ -173,7 +173,7 @@ if __name__ == '__main__':
     channels = 3
 
     checkpoint = 'models/model-dsbowl2018-01-23-002853.h5'
-    submission_name = 'sub-dsb2018-3'
+    submission_name = 'sub-dsb2018-4'
 
     train_path = os.path.join('data', 'stage1_train')
     test_path = os.path.join('data', 'stage1_test')
