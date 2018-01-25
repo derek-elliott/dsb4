@@ -7,7 +7,6 @@ import numpy as np
 import tensorflow as tf
 from keras import backend as K
 from keras.callbacks import EarlyStopping, ModelCheckpoint
-from keras.constraints import maxnorm
 from keras.layers import Input
 from keras.layers.convolutional import Conv2D, Conv2DTranspose
 from keras.layers.core import Dropout, Lambda
@@ -56,7 +55,7 @@ def build_model(height, width, channels, print_summary=True):
                 kernel_initializer='he_normal', padding='same')(c5)
 
     u6 = Conv2DTranspose(128, (2, 2), strides=(
-        2, 2), padding='same', kernel_constraint=maxnorm(3))(c5)
+        2, 2), padding='same')(c5)
     u6 = concatenate([u6, c4])
     c6 = Conv2D(128, (3, 3), activation='elu',
                 kernel_initializer='he_normal', padding='same')(u6)
@@ -65,7 +64,7 @@ def build_model(height, width, channels, print_summary=True):
                 kernel_initializer='he_normal', padding='same')(c6)
 
     u7 = Conv2DTranspose(64, (2, 2), strides=(
-        2, 2), padding='same', kernel_constraint=maxnorm(3))(c6)
+        2, 2), padding='same')(c6)
     u7 = concatenate([u7, c3])
     c7 = Conv2D(64, (3, 3), activation='elu',
                 kernel_initializer='he_normal', padding='same')(u7)
@@ -74,7 +73,7 @@ def build_model(height, width, channels, print_summary=True):
                 kernel_initializer='he_normal', padding='same')(c7)
 
     u8 = Conv2DTranspose(32, (2, 2), strides=(
-        2, 2), padding='same', kernel_constraint=maxnorm(3))(c7)
+        2, 2), padding='same')(c7)
     u8 = concatenate([u8, c2])
     c8 = Conv2D(32, (3, 3), activation='elu',
                 kernel_initializer='he_normal', padding='same')(u8)
@@ -83,7 +82,7 @@ def build_model(height, width, channels, print_summary=True):
                 kernel_initializer='he_normal', padding='same')(c8)
 
     u9 = Conv2DTranspose(16, (2, 2), strides=(
-        2, 2), padding='same', kernel_constraint=maxnorm(3))(c8)
+        2, 2), padding='same')(c8)
     u9 = concatenate([u9, c1], axis=3)
     c9 = Conv2D(16, (3, 3), activation='elu',
                 kernel_initializer='he_normal', padding='same')(u9)
@@ -168,12 +167,12 @@ def predict(width, height, channels, test_path, checkpoint, submission_name):
 
 
 if __name__ == '__main__':
-    width = 128
-    height = 128
+    width = 256
+    height = 256
     channels = 3
 
-    checkpoint = 'models/model-dsbowl2018-01-23-002853.h5'
-    submission_name = 'sub-dsb2018-4'
+    checkpoint = 'models/model-dsbowl2018-01-24-182621.h5'
+    submission_name = 'sub-dsb2018-5'
 
     train_path = os.path.join('data', 'stage1_train')
     test_path = os.path.join('data', 'stage1_test')

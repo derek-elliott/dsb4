@@ -108,11 +108,10 @@ class Images:
         for img in lab_img:
             yield self._rle_encode(img)
 
-    # This is really shitty at separating masks for run encoding.
     def _watershed_segment(self, image):
         distance = ndi.distance_transform_edt(image)
         local_max = peak_local_max(
-            distance, min_distance=3, labels=image, indices=False)
+            distance, min_distance=7, labels=image, indices=False)
         markers = ndi.label(local_max, structure=np.ones((3, 3)))[0]
         labels = watershed(-distance, markers, mask=image)
         for label in np.unique(labels):
