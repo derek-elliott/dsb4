@@ -51,7 +51,6 @@ def train(net, root_path, epochs=50, batch_size=32, lr=0.1, val_split=0.1, shuff
         for i, image in enumerate(train_data_loader):
             X = Variable(image['image'])
             y = Variable(image['combined_mask'])
-
             y_pred = net(X)
             probs = F.sigmoid(y_pred)
             probs_flat = probs.view(-1)
@@ -110,6 +109,7 @@ if __name__ == '__main__':
                       default=5, type='int', help='Epocs in a row with no decrease in loss to stop early')
 
     (options, args) = parser.parse_args()
+
     net = UNet(3, 0.2)
 
     try:

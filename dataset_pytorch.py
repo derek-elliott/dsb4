@@ -2,16 +2,13 @@ import os
 import warnings
 
 import numpy as np
-import torch
-from torch.utils.data import DataLoader, Dataset
-from torchvision import transforms, utils
-
-import matplotlib.pyplot as plt
 from skimage import io
 
-from transforms_pytorch import Rescale, ToTensor
+import torch
+from torch.utils.data import DataLoader, Dataset
 
 warnings.filterwarnings("ignore")
+
 
 class NucleiDataset(Dataset):
     def __init__(self, root_dir, channels, transform=None):
@@ -27,7 +24,7 @@ class NucleiDataset(Dataset):
         image_name = self.image_ids[idx]
         img_path = os.path.join(self.root_dir, image_name,
                                 'images', f'{image_name}.png')
-        image = io.imread(os.path.join(img_path))[:,;,:self.channels]
+        image = io.imread(os.path.join(img_path))[:, :, :self.channels]
 
         masks = []
         mask_path = os.path.join(self.root_dir, str(image_name), 'masks')

@@ -8,42 +8,49 @@ class UNet(nn.Module):
 
     def __init__(self, n_channels, dropout):
         super(UNet, self).__init__()
-        self.inconv = Input(n_channels, 64, dropout)
-        self.down1 = Down(64, 128, dropout)
-        self.down2 = Down(128, 256, dropout)
-        self.down3 = Down(256, 512, dropout)
-        self.down4 = Down(512, 1024, dropout)
-        self.up1 = Up(1024, 512, dropout)
-        self.up2 = Up(512, 256, dropout)
-        self.up3 = Up(256, 128, dropout)
-        self.up4 = Up(128, 64, dropout)
-        self.out = nn.Conv2d(64, 1, 1)
+        self.inconv = DoubleConv3(n_channels, 64, dropout)
+        self.pool1 = Pool()
+        self.conv1 = DoubleConv3(64, 128, dropout)
+        self.pool2 = Pool()
+        self.conv2 = DoubleConv3(128, 256, dropout)
+        self.pool3 = Pool()
+        self.conv3 = DoubleConv3(256, 512, dropout)
+        self.pool4 = Pool()
+        self.conv4 = DoubleConv3(512, 1024, dropout)
+        self.up1 = ConvUp2(1024, 1024)
+        self.conv5 = DoubleConv3(1024, 512, dropout)
+        self.up2 = ConvUp2(512, 512)
+        self.conv6 = DoubleConv3(512, 256, dropout)
+        self.up3 = ConvUp2(256, 256)
+        self.conv7 = DoubleConv3(256, 128, dropout)
+        self.up4 = ConvUp2(128, 128)
+        self.conv8 = DoubleConv3(128, 64, dropout)
+        self.outconv = nn.Conv2d(64, 2, 1)
 
     def forward(self, x):
         x1 = self.inconv(x)
-        x2 = self.down1(x1)
-        x3 = self.down2(x2)
-        x4 = self.down3(x3)
-        x5 = self.down4(x4)
-        x = self.up1(x5, x4)
-        x = self.up2(x, x3)
-        x = self.up3(x, x2)
-        x = self.up4(x, x1)
-        x = self.out(x)
-        return x
+        p1 = self.pool1(x1)
+        c1 = self.conv1(p1)
+        p2 = self.pool2(c1)
+        c2 = self.conv2(p2)
+        p3 = self.pool3(c2)
+        c3 = self.conv3(p3)
+        p4 = self.pool4(c3)
+        c4 = self.conv4(p4)
+        u1 = self.up1(c4, c3)
+        c5 = self.conv5(u1)
+        u2 = self.up2(c5, c2)
+        c6 = self.conv6(u2)
+        u3 = self.up3(c6, c1)
+        c7 = self.conv7(u3)
+        u4 = self.up4(c7, x1)
+        c8 = self.conv8(u4)
+        out = self.outconv(c8)
+        return out
 
-class Input(nn.Module):
+class DoubleConv3(nn.Module):
     def __init__(self, in_channel, out_channel, dropout):
-        super(Input, self).__init__()
-        self.conv = DoubleConv(in_channel, out_channel, dropout)
-
-    def forward(self, x):
-        x = self.conv(x)
-        return x
-
-class DoubleConv(nn.Module):
-    def __init__(self, in_channel, out_channel, dropout):
-        super(DoubleConv, self).__init__()
+        super(DoubleConv3, self).__init__()
         self.conv = nn.Sequential(
             nn.Conv2d(in_channel, out_channel, 3, padding=1),
             nn.BatchNorm2d(out_channel),
@@ -59,37 +66,23 @@ class DoubleConv(nn.Module):
         x = self.conv(x)
         return x
 
-class Down(nn.Module):
-    def __init__(self, in_channel, out_channel, dropout):
-        super(Down, self).__init__()
-        self.conv = nn.Sequential(
-            nn.MaxPool2d(2),
-            DoubleConv(in_channel, out_channel, dropout)
-        )
-    def forward(self, x):
-        x = self.conv(x)
-        return x
-
-class Up(nn.Module):
-    def __init__(self, in_channel, out_channel, dropout):
-        super(Up, self).__init__()
+class ConvUp2(nn.Module):
+    def __init__(self, in_channel, out_channel):
+        super(ConvUp2, self).__init__()
         self.up = nn.ConvTranspose2d(in_channel, out_channel, 2, stride=2)
-        self.conv = DoubleConv(out_channel, out_channel, dropout)
-
-    def center_crop(self, layer, target_size):
-        batch_size, n_channels, layer_width, layer_height = layer.size()
-        xy1 = (layer_width - target_size) // 2
-        return layer[:, :, xy1:(xy1 + target_size), xy1:(xy1 + target_size)]
 
     def forward(self, x1, x2):
         x1 = self.up(x1)
-        # diffX = x1.size()[2] - x2.size()[2]
-        # diffY = x1.size()[3] - x2.size()[3]
-        # x2 = F.pad(x2, (diffX // 2, int(diffX / 2),
-        #                 diffY // 2, int(diffY / 2)))
-        print(x1.size()[1], x2.size()[1])
-        x2 = self.center_crop(x2, x1.size()[1])
-        print(x2.size()[1])
-        x = torch.cat([x1, x2], dim=1)
-        x = self.conv(x)
+        x = torch.cat([x2, x1], dim=1)
+        return x
+
+class Pool(nn.Module):
+    def __init__(self):
+        super(Pool, self).__init__()
+        self.pool = nn.MaxPool2d(2)
+
+    def forward(self, x):
+        print("Do I get here?")
+        x = self.pool(x)
+        print("How about here?")
         return x
