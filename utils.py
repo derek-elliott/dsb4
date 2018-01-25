@@ -1,5 +1,6 @@
 # Use this guy to run your first model: https://www.kaggle.com/keegil/keras-u-net-starter-lb-0-277
 # Use this to try to do some preprocessing: https://github.com/orobix/retina-unet/blob/master/lib/pre_processing.py
+# Maybe try doing this in Pytorch?  http://pytorch.org/tutorials/beginner/data_loading_tutorial.html
 
 import os
 
@@ -112,7 +113,7 @@ class Images:
     def _watershed_segment(self, image):
         distance = ndi.distance_transform_edt(image)
         local_max = peak_local_max(
-            distance, min_distance=3, labels=image, indices=False)
+            distance, min_distance=4, labels=image, indices=False)
         markers = ndi.label(local_max, structure=np.ones((3, 3)))[0]
         labels = watershed(-distance, markers, mask=image)
         for label in np.unique(labels):

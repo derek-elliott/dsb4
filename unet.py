@@ -3,7 +3,6 @@ import random
 from datetime import datetime
 
 import numpy as np
-
 import tensorflow as tf
 from keras import backend as K
 from keras.callbacks import EarlyStopping, ModelCheckpoint
@@ -14,6 +13,7 @@ from keras.layers.core import Dropout, Lambda
 from keras.layers.merge import concatenate
 from keras.layers.pooling import MaxPooling2D
 from keras.models import Model, load_model
+
 from utils import Images
 
 
@@ -55,8 +55,7 @@ def build_model(height, width, channels, print_summary=True):
     c5 = Conv2D(256, (3, 3), activation='elu',
                 kernel_initializer='he_normal', padding='same')(c5)
 
-    u6 = Conv2DTranspose(128, (2, 2), strides=(
-        2, 2), padding='same', kernel_constraint=maxnorm(3))(c5)
+    u6 = Conv2DTranspose(128, (2, 2), strides=(2, 2), padding='same')(c5)
     u6 = concatenate([u6, c4])
     c6 = Conv2D(128, (3, 3), activation='elu',
                 kernel_initializer='he_normal', padding='same')(u6)
@@ -64,8 +63,7 @@ def build_model(height, width, channels, print_summary=True):
     c6 = Conv2D(128, (3, 3), activation='elu',
                 kernel_initializer='he_normal', padding='same')(c6)
 
-    u7 = Conv2DTranspose(64, (2, 2), strides=(
-        2, 2), padding='same', kernel_constraint=maxnorm(3))(c6)
+    u7 = Conv2DTranspose(64, (2, 2), strides=(2, 2), padding='same')(c6)
     u7 = concatenate([u7, c3])
     c7 = Conv2D(64, (3, 3), activation='elu',
                 kernel_initializer='he_normal', padding='same')(u7)
@@ -73,8 +71,7 @@ def build_model(height, width, channels, print_summary=True):
     c7 = Conv2D(64, (3, 3), activation='elu',
                 kernel_initializer='he_normal', padding='same')(c7)
 
-    u8 = Conv2DTranspose(32, (2, 2), strides=(
-        2, 2), padding='same', kernel_constraint=maxnorm(3))(c7)
+    u8 = Conv2DTranspose(32, (2, 2), strides=(2, 2), padding='same')(c7)
     u8 = concatenate([u8, c2])
     c8 = Conv2D(32, (3, 3), activation='elu',
                 kernel_initializer='he_normal', padding='same')(u8)
@@ -82,8 +79,7 @@ def build_model(height, width, channels, print_summary=True):
     c8 = Conv2D(32, (3, 3), activation='elu',
                 kernel_initializer='he_normal', padding='same')(c8)
 
-    u9 = Conv2DTranspose(16, (2, 2), strides=(
-        2, 2), padding='same', kernel_constraint=maxnorm(3))(c8)
+    u9 = Conv2DTranspose(16, (2, 2), strides=(2, 2), padding='same')(c8)
     u9 = concatenate([u9, c1], axis=3)
     c9 = Conv2D(16, (3, 3), activation='elu',
                 kernel_initializer='he_normal', padding='same')(u9)
@@ -102,6 +98,16 @@ def build_model(height, width, channels, print_summary=True):
 
     return model
 
+def mean_iou(y_true, y_pred):
+    prec = []
+    for t in np.arange(0.5, 1.0, 0.05):
+        y_pred_ = tf.to_int32(y_pred > t)
+        score, up_opt = tf.metrics.mean_iou(y_true, y_pred_, 2)
+        K.get_session().run(tf.local_variables_initializer())
+        with tf.control_dependencies([up_opt]):
+            score = tf.identity(score)
+        prec.append(score)
+    return K.mean(K.stack(prec))
 
 def train_model(model, images):
     earlystopper = EarlyStopping(patience=5, verbose=1)
@@ -117,23 +123,9 @@ def train_model(model, images):
 
     return checkpoint
 
-
 def model_predict(checkpoint, images):
     model = load_model(checkpoint, custom_objects={'mean_iou': mean_iou})
     return model.predict(images, verbose=1)
-
-# Define IoU metric
-def mean_iou(y_true, y_pred):
-    prec = []
-    for t in np.arange(0.5, 1.0, 0.05):
-        y_pred_ = tf.to_int32(y_pred > t)
-        score, up_opt = tf.metrics.mean_iou(y_true, y_pred_, 2)
-        K.get_session().run(tf.local_variables_initializer())
-        with tf.control_dependencies([up_opt]):
-            score = tf.identity(score)
-        prec.append(score)
-    return K.mean(K.stack(prec))
-
 
 def train(width, height, channels, train_path):
     bad_images = ['58c593bcb98386e7fd42a1d34e291db93477624b164e83ab2afa3caa90d1d921',
@@ -168,15 +160,15 @@ def predict(width, height, channels, test_path, checkpoint, submission_name):
 
 
 if __name__ == '__main__':
-    width = 128
-    height = 128
+    width = 256
+    height = 256
     channels = 3
 
-    checkpoint = 'models/model-dsbowl2018-01-23-002853.h5'
+    checkpoint = 'models/model-dsbowl2018-01-22-142722.h5'
     submission_name = 'sub-dsb2018-4'
 
     train_path = os.path.join('data', 'stage1_train')
     test_path = os.path.join('data', 'stage1_test')
 
-    # train(width, height, channels, train_path)
-    predict(width, height, channels, test_path, checkpoint, submission_name)
+    train(width, height, channels, train_path)
+    # predict(width, height, channels, test_path, checkpoint, submission_name)
