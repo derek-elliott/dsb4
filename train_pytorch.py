@@ -25,7 +25,7 @@ def train(net, root_path, epochs=50, batch_size=32, lr=0.1, val_split=0.1, shuff
     now = datetime.now().strftime('%Y-%m-%d-%H%M%S')
     checkpoint = f'models/pt-model-dsbowl{now}.pth'
 
-    dataset = NucleiDataset(root_path, transform=transform)
+    dataset = NucleiDataset(root_path, channels=3, transform=transform)
     N_train = len(dataset)
 
     optimizer = optim.Adam(net.parameters(), lr=lr)
@@ -110,7 +110,7 @@ if __name__ == '__main__':
                       default=5, type='int', help='Epocs in a row with no decrease in loss to stop early')
 
     (options, args) = parser.parse_args()
-    net = UNet(4, 0.2)
+    net = UNet(3, 0.2)
 
     try:
         train(net, options.root_path, options.epochs, options.batch_size, options.lr, options.val_split, options.shuffle,

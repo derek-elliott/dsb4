@@ -14,9 +14,10 @@ from transforms_pytorch import Rescale, ToTensor
 warnings.filterwarnings("ignore")
 
 class NucleiDataset(Dataset):
-    def __init__(self, root_dir, transform=None):
+    def __init__(self, root_dir, channels, transform=None):
         self.root_dir = root_dir
         self.transform = transform
+        self.channels = channels
         self.image_ids = next(os.walk(root_dir))[1]
 
     def __len__(self):
@@ -26,7 +27,7 @@ class NucleiDataset(Dataset):
         image_name = self.image_ids[idx]
         img_path = os.path.join(self.root_dir, image_name,
                                 'images', f'{image_name}.png')
-        image = io.imread(os.path.join(img_path))
+        image = io.imread(os.path.join(img_path))[:,;,:self.channels]
 
         masks = []
         mask_path = os.path.join(self.root_dir, str(image_name), 'masks')
