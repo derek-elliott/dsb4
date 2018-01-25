@@ -6,7 +6,6 @@ import numpy as np
 import tensorflow as tf
 from keras import backend as K
 from keras.callbacks import EarlyStopping, ModelCheckpoint
-from keras.constraints import maxnorm
 from keras.layers import Input
 from keras.layers.convolutional import Conv2D, Conv2DTranspose
 from keras.layers.core import Dropout, Lambda
@@ -164,8 +163,8 @@ if __name__ == '__main__':
     height = 256
     channels = 3
 
-    checkpoint = 'models/model-dsbowl2018-01-22-142722.h5'
-    submission_name = 'sub-dsb2018-4'
+    checkpoint = 'models/model-dsbowl2018-01-24-182621.h5'
+    submission_name = 'sub-dsb2018-5'
 
     train_path = os.path.join('data', 'stage1_train')
     test_path = os.path.join('data', 'stage1_test')
