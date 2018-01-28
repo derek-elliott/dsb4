@@ -1,0 +1,16 @@
+data:
+  root_path: data/stage1_train
+  workers: 2
+  img_size: 128
+misc:
+  epochs: 50
+  batch_size: 1
+  val_split: 0.1
+  shuffle: false
+  seed: 42
+  early_stop_loss: 5
+model:
+  lr: 0.01
+  weight_decay: 0.0005
+  dropout: 0.2
+  channels: 3

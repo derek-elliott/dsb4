@@ -1,19 +1,22 @@
 import numpy as np
+import torch
 import torch.nn.functional as F
 from torch.autograd import Variable
 
 
-def eval_net(net, dataset):
+def eval_net(net, dataset, use_gpu=False):
     total = 0
     for i, image in enumerate(dataset):
-        X = Variable(image['image'])
-        y = Variable(image['combined_mask'])
+        if use_gpu:
+            X = Variable(image['image']).cuda()
+            y = Variable(image['combined_mask']).cuda()
+        else:
+            X = Variable(image['image'])
+            y = Variable(image['combined_mask'])
 
         y_pred = net(X)
 
-        y_pred = (F.sigmoid(y_pred) > 0.5).float()
-
-        score = get_iou(y_pred, y.float())
+        score = get_iou(torch.squeeze(y_pred), torch.squeeze(y))
         total += score
     return total / len(dataset)
 
@@ -22,9 +25,9 @@ def get_iou(pred, gt):
     if pred.shape != gt.shape:
         print(f'Prediction shape: {pred.shape}, Ground Truth Shape{gt.shape}')
     assert(pred.shape == gt.shape)
-    gt = gt.astype(np.float32)
-    pred = pred.astype(np.float32)
-
+    gt = gt.data.numpy().astype(np.float32)
+    pred = pred.data.numpy().astype(np.float32)
+    max_label = 1
     count = np.zeros((max_label + 1,))
     for j in range(max_label + 1):
         x = np.where(pred == j)
