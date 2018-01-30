@@ -6,6 +6,8 @@ import torch
 from torch.utils.data import Dataset
 
 from skimage import io, transform
+from skimage.color import rgb2gray
+from skimage.exposure import adjust_gamma, equalize_adapthist
 
 warnings.filterwarnings("ignore")
 
@@ -25,8 +27,8 @@ class NucleiPredictDataset(Dataset):
         img_path = os.path.join(self.root_dir, image_name,
                                 'images', f'{image_name}.png')
         image = io.imread(img_path)[:, :, :self.channels]
-
-        sample = {'image': image, 'orig_size': image.size()[-1], 'file_name': image_name}
+        sample = {'image': image,
+                  'orig_size': image.shape[:-1], 'file_name': image_name}
 
         if self.transform:
             sample = self.transform(sample)
@@ -44,7 +46,7 @@ class PredictRescale():
 
         img = transform.resize(image, self.output_size)
 
-        return {'image': img, 'orig_size' = orig_size, 'file_name': image_name}
+        return {'image': img, 'orig_size': orig_size, 'file_name': image_name}
 
 
 class PredictToTensor():
@@ -62,4 +64,30 @@ class PredictNormalize():
     def __call__(self, sample):
         image, orig_size, image_name = sample['image'], sample['orig_size'], sample['file_name']
         img = (image - self.minimum) / (self.maximum - self.minimum)
-        return {'image': img, 'orig_size', orig_size, 'file_name': image_name}
+        return {'image': img, 'orig_size': orig_size, 'file_name': image_name}
+
+
+class PredictToGrayScale():
+    def __call__(self, sample):
+        image, orig_size, image_name = sample['image'], sample['orig_size'], sample['file_name']
+        img = rgb2gray(image)
+        np_img = np.array(img, dtype=np.uint8)
+        np_img = np.dstack([np_img, np_img, np_img])
+        return {'image': img, 'orig_size': orig_size, 'file_name': image_name}
+
+
+class PredictCLAHEEqualize():
+    def __call__(self, sample):
+        image, orig_size, image_name = sample['image'], sample['orig_size'], sample['file_name']
+        img = equalize_adapthist(image)
+        return {'image': img, 'orig_size': orig_size, 'file_name': image_name}
+
+
+class PredictAdjustGamma():
+    def __init__(self, gamma):
+        self.gamma = gamma
+
+    def __call__(self, sample):
+        image, orig_size, image_name = sample['image'], sample['orig_size'], sample['file_name']
+        img = adjust_gamma(image, gamma=self.gamma)
+        return {'image': img, 'orig_size': orig_size, 'file_name': image_name}

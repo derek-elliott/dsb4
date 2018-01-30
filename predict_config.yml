@@ -1,12 +1,14 @@
+model:
+  channels: 3
 data:
   root_path: data/stage1_test
   workers: 2
   img_height: 128
   img_width: 128
 misc:
-  model_path: models/pt-model-dsbowl2018-01-27-195542.pth
+  model_path: models/pt-model-dsbowl2018-01-29-200355.pth
   batch_size: 1
   cutoff: 0.5
   viz_masks: true
-  make_subission: true
+  make_submission: true
   submission_name: sub-dsb2018-6

@@ -16,26 +16,28 @@ from torch.autograd import Variable
 from torch.utils.data import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
 
-from train_dataset import NucleiTrainDataset, TrainRescale, TrainNormalize, TrainToTensor
 from evaluate_model import eval_net
 from tqdm import tqdm
+from train_dataset import (NucleiTrainDataset, TrainNormalize, TrainRescale,
+                           TrainToGrayScale, TrainToTensor)
 from unet import UNet
 
 
 def train(net, data_cfg, model_cfg, epochs=50, batch_size=32, val_split=0.1, shuffle=False, seed=42, early_stop_loss=5, use_gpu=False):
     transform = transforms.Compose(
-        [TrainRescale((data_cfg['img_size'], data_cfg['img_size'])),
-        TrainNormalize(0, 255),
-        TrainToTensor()])
+        [TrainRescale((data_cfg['img_height'], data_cfg['img_width'])),
+         TrainNormalize(0, 255),
+         TrainToTensor()])
     now = datetime.now().strftime('%Y-%m-%d-%H%M%S')
     checkpoint = f'models/pt-model-dsbowl{now}.pth'
 
     dataset = NucleiTrainDataset(
-        data_cfg['root_path'], channels=3, transform=transform)
+        data_cfg['root_path'], bad_images=data_cfg['bad_images'], channels=model_cfg['channels'], transform=transform)
 
     N_train = len(dataset)
 
-    optimizer = optim.SGD(net.parameters(), lr=model_cfg['lr'], weight_decay=model_cfg['weight_decay'])
+    optimizer = optim.SGD(
+        net.parameters(), lr=model_cfg['lr'], weight_decay=model_cfg['weight_decay'])
     criterion = nn.BCELoss()
 
     last_epoch_loss = 0
@@ -82,7 +84,8 @@ def train(net, data_cfg, model_cfg, epochs=50, batch_size=32, val_split=0.1, shu
         if last_epoch_loss < epoch_loss:
             unchanged_loss_run += 1
         else:
-            print(f'Loss decreased by {(last_epoch_loss - epoch_loss)/(last_epoch_loss + epoch_loss)}%, saving checpoing.')
+            print(
+                f'Loss decreased by {(last_epoch_loss - epoch_loss)/(last_epoch_loss + epoch_loss)}%, saving checkpoint.')
             torch.save(net.state_dict(), checkpoint)
         if unchanged_loss_run > early_stop_loss:
             print('Stopping early...')
@@ -104,7 +107,8 @@ def train_valid_split(dataset, val_split, shuffle=False, seed=42):
 
 if __name__ == '__main__':
     parser = OptionParser()
-    parser.add_option('-g', '--gpu', action='store_true', dest='use_gpu', default=False, help='Use CUDA (Defaults to false)')
+    parser.add_option('-g', '--gpu', action='store_true', dest='use_gpu',
+                      default=False, help='Use CUDA (Defaults to false)')
 
     (options, args) = parser.parse_args()
 
