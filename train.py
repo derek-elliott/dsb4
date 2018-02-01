@@ -37,7 +37,7 @@ def train(net, data_cfg, model_cfg, epochs=50, batch_size=32, val_split=0.1, shu
     N_train = len(dataset)
 
     optimizer = optim.SGD(
-        net.parameters(), lr=model_cfg['lr'], weight_decay=model_cfg['weight_decay'])
+        net.parameters(), lr=model_cfg['lr'], momentum=model_cfg['momentum'], weight_decay=model_cfg['weight_decay'])
     criterion = nn.BCELoss()
 
     last_epoch_loss = 0
@@ -67,6 +67,8 @@ def train(net, data_cfg, model_cfg, epochs=50, batch_size=32, val_split=0.1, shu
             y_pred = net(X)
             net.eval()
 
+            pad = (y.shape[1]-y_pred.shape[2])//2
+            y_pred = F.pad(y_pred, [pad, pad, pad, pad], mode="constant")
             loss = criterion(y_pred, y)
             epoch_loss += loss.data[0]
 
@@ -76,11 +78,10 @@ def train(net, data_cfg, model_cfg, epochs=50, batch_size=32, val_split=0.1, shu
             loss.backward()
             optimizer.step()
 
-        # TODO: Finish the accurate metric...
         # val_score = eval_net(net, val_data_loader, use_gpu)
         val_score = 0
         print(
-            f'Epoch finished --- Loss: {epoch_loss/(batch_size if batch_size != 1 else N_train)}  Mean IOU: {val_score}')
+            f'Epoch finished --- Loss: {epoch_loss/(batch_size if batch_size != 1 else N_train)}  DICE Coeff: {val_score}')
         if last_epoch_loss < epoch_loss:
             unchanged_loss_run += 1
         else:
