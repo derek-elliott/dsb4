@@ -4,7 +4,7 @@
 import torch
 from torch.autograd import Variable
 import torch.nn as nn
-import torch.nn.functional as f
+import torch.nn.functional as F
 
 class DCAN(nn.Module):
     def __init__(self, n_channels, dropout=0.2):
@@ -29,19 +29,11 @@ class DCAN(nn.Module):
         self.out3 = Out(1024, 8, dropout)
 
     def forward(self, x):
-        output = Variable(torch.from_numpy(numpy.zeros(x.shape[1:])).type(torch.FloatTensor))
-        x = self.layers(x)
-        x1 = self.conv4(x)
-        x2 = self.pool4(x1)
-        x2 = self.conv5(x2)
-        x3 = self.pool5(x2)
-        x3 = self.conv6(x3)
+        x1 = self.conv4(self.layers(x))
+        x2 = self.conv5(self.pool4(x1))
+        x3 = self.conv6(self.pool5(x2))
 
-        output = output + self.out1(x1)
-
-        output = output + self.out2(x2)
-
-        output = output + self.out3(x3)
+        output = self.out1(x1) + self.out2(x2) + self.out3(x3)
 
         return F.Softmax(output)
 
