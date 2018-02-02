@@ -38,7 +38,7 @@ class Down(nn.Module):
     def __init__(self, in_channel, out_channel, dropout):
         super(Down, self).__init__()
         self.conv = nn.Sequential(
-            nn.MaxPool2d(2, stride=2),
+            nn.MaxPool2d(2),
             DoubleConv3(in_channel, out_channel, dropout)
         )
 
@@ -50,6 +50,7 @@ class Up(nn.Module):
     def __init__(self, in_channel, out_channel, dropout):
         super(Up, self).__init__()
         self.conv1 = nn.ConvTranspose2d(in_channel, out_channel, 2, stride=2)
+        # self.conv1 = nn.UpsamplingBilinear2d(scale_factor=2)
         self.conv2 = DoubleConv3(in_channel, out_channel, dropout)
 
     def center_crop(self, layer, target_size):
@@ -68,10 +69,12 @@ class DoubleConv3(nn.Module):
     def __init__(self, in_channel, out_channel, dropout):
         super(DoubleConv3, self).__init__()
         self.conv = nn.Sequential(
-            nn.Conv2d(in_channel, out_channel, 3),
+            nn.Conv2d(in_channel, out_channel, 3, padding=1),
+            nn.BatchNorm2d(out_channel),
             nn.Dropout2d(p=dropout),
             nn.ELU(inplace=True),
-            nn.Conv2d(out_channel, out_channel, 3),
+            nn.Conv2d(out_channel, out_channel, 3, padding=1),
+            nn.BatchNorm2d(out_channel),
             nn.Dropout2d(p=dropout),
             nn.ELU(inplace=True)
         )

@@ -48,3 +48,15 @@ def dice_coeff(input, target):
 class DiceLoss(_Loss):
     def forward(self, input, target):
         return 1 - dice_coeff(input, target)
+
+class IoULoss(_Loss):
+    def forward(self, pred, gt, cutoff):
+        pred = (pred > cutoff)
+        mask = (gt != 255)
+        gt = (gt == 1)
+        union = (gt | pred)[mask].long().sum()
+        if not union:
+            return 0.
+        else:
+            intersection = (gt & pred)[mask].long().sum()
+            return 1. - intersection / union

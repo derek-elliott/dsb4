@@ -49,6 +49,7 @@ def predict(net, data_cfg, batch_size, channels, visualize=False, cutoff=0.5, us
         y_pred = net(X)
         mask = resize(np.squeeze(y_pred.data.numpy()), tuple(
             int(i) for i in image['orig_size']), mode='constant', preserve_range=True)
+
         predictions[image['file_name'][0]] = mask
 
         if visualize:
@@ -56,13 +57,13 @@ def predict(net, data_cfg, batch_size, channels, visualize=False, cutoff=0.5, us
                 f'Visualizing results for {image.get("file_name")[0]}, close to continue...')
             rev_transform = np.transpose(image['image'].numpy(), (2, 3, 1, 0))
             img = np.squeeze(rev_transform) * 255
+            img = resize(img, tuple(int(i) for i in image['orig_size']))
 
-            masks = watershed_segment(np.squeeze(y_pred.data.numpy()) > cutoff)
-            combined_mask = mask = np.zeros(np.squeeze(
-                y_pred.data.numpy()).shape, dtype=np.int32)
-            for i, mask in enumerate(masks):
-                combined_mask = np.maximum(combined_mask, (mask * (i + 1)))
-
+            masks = watershed_segment(mask > cutoff)
+            combined_mask = np.zeros(tuple(int(i)
+                                           for i in image['orig_size']), dtype=np.int32)
+            for i, seg_mask in enumerate(masks):
+                combined_mask = np.maximum(combined_mask, (seg_mask * (i + 1)))
             img_with_labels = label2rgb(combined_mask, image=img)
 
             imshow(img_with_labels)

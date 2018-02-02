@@ -1,8 +1,8 @@
 data:
   root_path: data/stage1_train
   workers: 2
-  img_height: 572
-  img_width: 572
+  img_height: 256
+  img_width: 256
   bad_images:
     - 'b1eb0123fe2d8c825694b193efb7b923d95effac9558ee4eaf3116374c2c94fe'
     - '19f0653c33982a416feed56e5d1ce6849fd83314fd19dfa1c5b23c6b66e9868a'

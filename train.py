@@ -67,8 +67,6 @@ def train(net, data_cfg, model_cfg, epochs=50, batch_size=32, val_split=0.1, shu
             y_pred = net(X)
             net.eval()
 
-            pad = (y.shape[1]-y_pred.shape[2])//2
-            y_pred = F.pad(y_pred, [pad, pad, pad, pad], mode="constant")
             loss = criterion(y_pred, y)
             epoch_loss += loss.data[0]
 
