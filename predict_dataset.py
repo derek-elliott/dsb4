@@ -3,11 +3,10 @@ import warnings
 
 import numpy as np
 import torch
+import torchvision.transforms.functional as F
 from torch.utils.data import Dataset
 
 from skimage import io, transform
-from skimage.color import rgb2gray
-from skimage.exposure import adjust_gamma, equalize_adapthist
 
 warnings.filterwarnings("ignore")
 
@@ -27,8 +26,7 @@ class NucleiPredictDataset(Dataset):
         img_path = os.path.join(self.root_dir, image_name,
                                 'images', f'{image_name}.png')
         image = io.imread(img_path)[:, :, :self.channels]
-        sample = {'image': image,
-                  'orig_size': image.shape[:-1], 'file_name': image_name}
+        sample = {'image': image, 'orig_image': image, 'orig_size': image.shape[:-1], 'file_name': image_name}
 
         if self.transform:
             sample = self.transform(sample)
@@ -42,52 +40,26 @@ class PredictRescale():
         self.output_size = output_size
 
     def __call__(self, sample):
-        image, orig_size, image_name = sample['image'], sample['orig_size'], sample['file_name']
+        image, orig_image, orig_size, image_name = sample['image'], sample['orig_image'], sample['orig_size'], sample['file_name']
 
         img = transform.resize(image, self.output_size)
 
-        return {'image': img, 'orig_size': orig_size, 'file_name': image_name}
+        return {'image': img, 'orig_image': orig_image, 'orig_size': orig_size, 'file_name': image_name}
 
 
 class PredictToTensor():
     def __call__(self, sample):
-        image, orig_size, image_name = sample['image'], sample['orig_size'], sample['file_name']
+        image, orig_image, orig_size, image_name = sample['image'], sample['orig_image'], sample['orig_size'], sample['file_name']
         img = image.transpose((2, 0, 1))
-        return {'image': torch.from_numpy(img).type(torch.FloatTensor), 'orig_size': orig_size, 'file_name': image_name}
+        return {'image': torch.from_numpy(img).type(torch.FloatTensor), 'orig_image': orig_image, 'orig_size': orig_size, 'file_name': image_name}
 
 
 class PredictNormalize():
-    def __init__(self, minimum, maximum):
-        self.minimum = minimum
-        self.maximum = maximum
+    def __init__(self, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]):
+        self.mean = mean
+        self.std = std
 
     def __call__(self, sample):
-        image, orig_size, image_name = sample['image'], sample['orig_size'], sample['file_name']
-        img = (image - self.minimum) / (self.maximum - self.minimum)
-        return {'image': img, 'orig_size': orig_size, 'file_name': image_name}
-
-
-class PredictToGrayScale():
-    def __call__(self, sample):
-        image, orig_size, image_name = sample['image'], sample['orig_size'], sample['file_name']
-        img = rgb2gray(image)
-        np_img = np.array(img, dtype=np.uint8)
-        np_img = np.dstack([np_img, np_img, np_img])
-        return {'image': img, 'orig_size': orig_size, 'file_name': image_name}
-
-
-class PredictCLAHEEqualize():
-    def __call__(self, sample):
-        image, orig_size, image_name = sample['image'], sample['orig_size'], sample['file_name']
-        img = equalize_adapthist(image)
-        return {'image': img, 'orig_size': orig_size, 'file_name': image_name}
-
-
-class PredictAdjustGamma():
-    def __init__(self, gamma):
-        self.gamma = gamma
-
-    def __call__(self, sample):
-        image, orig_size, image_name = sample['image'], sample['orig_size'], sample['file_name']
-        img = adjust_gamma(image, gamma=self.gamma)
-        return {'image': img, 'orig_size': orig_size, 'file_name': image_name}
+        image, orig_image, orig_size, image_name = sample['image'], sample['orig_image'], sample['orig_size'], sample['file_name']
+        image = F.normalize(image, self.mean, self.std)
+        return {'image': image, 'orig_image': orig_image, 'orig_size': orig_size, 'file_name': image_name}

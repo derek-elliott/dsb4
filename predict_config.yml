@@ -6,7 +6,7 @@ data:
   img_height: 256
   img_width: 256
 misc:
-  model_path: models/pt-model-dsbowl2018-02-02-072626.pth
+  model_path: models/pt-model-dsbowl2018-02-05-132800.pth
   batch_size: 1
   cutoff: 0.5
   viz_masks: true

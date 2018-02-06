@@ -18,16 +18,24 @@ from torch.utils.data.sampler import SubsetRandomSampler
 
 from evaluate_model import eval_net
 from tqdm import tqdm
-from train_dataset import (NucleiTrainDataset, TrainNormalize, TrainRescale,
-                           TrainToGrayScale, TrainToTensor)
+from train_dataset import (ColorJitter, NucleiTrainDataset, RandomGrayscale,
+                           RandomHorizontalFlip, RandomResizedCrop,
+                           RandomRotation, RandomVerticalFlip, TrainNormalize,
+                           TrainToTensor)
 from unet import UNet
 
 
 def train(net, data_cfg, model_cfg, epochs=50, batch_size=32, val_split=0.1, shuffle=False, seed=42, early_stop_loss=5, use_gpu=False):
     transform = transforms.Compose(
-        [TrainRescale((data_cfg['img_height'], data_cfg['img_width'])),
-         TrainNormalize(0, 255),
-         TrainToTensor()])
+        [RandomResizedCrop((data_cfg['img_height'], data_cfg['img_width'])),
+         RandomHorizontalFlip(prob=0.5),
+         RandomVerticalFlip(prob=0.5),
+         ColorJitter(brightness=1.5, contrast=1.5,
+                          saturation=1.5, hue=0.25),
+         RandomRotation(degrees=90),
+         RandomGrayscale(prob=0.1),
+         TrainToTensor(),
+         TrainNormalize()])
     now = datetime.now().strftime('%Y-%m-%d-%H%M%S')
     checkpoint = f'models/pt-model-dsbowl{now}.pth'
 
@@ -78,16 +86,17 @@ def train(net, data_cfg, model_cfg, epochs=50, batch_size=32, val_split=0.1, shu
 
         # val_score = eval_net(net, val_data_loader, use_gpu)
         val_score = 0
-        print(
+        tqdm.write(
             f'Epoch finished --- Loss: {epoch_loss/(batch_size if batch_size != 1 else N_train)}  DICE Coeff: {val_score}')
         if last_epoch_loss < epoch_loss:
             unchanged_loss_run += 1
         else:
-            print(
+            tqdm.write(
                 f'Loss decreased by {(last_epoch_loss - epoch_loss)/(last_epoch_loss + epoch_loss)}%, saving checkpoint.')
             torch.save(net.state_dict(), checkpoint)
+            unchanged_loss_run = 0
         if unchanged_loss_run > early_stop_loss:
-            print('Stopping early...')
+            tqdm.write('Stopping early...')
             break
         last_epoch_loss = epoch_loss
 
