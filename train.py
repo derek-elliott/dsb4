@@ -117,11 +117,15 @@ if __name__ == '__main__':
     parser = OptionParser()
     parser.add_option('-g', '--gpu', action='store_true', dest='use_gpu',
                       default=False, help='Use CUDA (Defaults to false)')
+    parser.add_option('-m', '--model', action='store_true', dest='load_model',
+                      default=False, help='Load model from file (Defaults to false)')
 
     (options, args) = parser.parse_args()
 
     with open('train_config.yml', 'r') as f:
         cfg = yaml.load(f)
+
+    gen_cfg = cfg['misc']
 
     net = UNet(cfg['model']['channels'], cfg['model']['dropout'])
 
@@ -129,7 +133,10 @@ if __name__ == '__main__':
         net.cuda()
         cudann.benchmark = True
 
-    gen_cfg = cfg['misc']
+    if options.load_model:
+        print(f'Loading model at {gen_cfg.get("model_path")}.')
+        net.load_state_dict(torch.load(gen_cfg['model_path']))
+        print('Model loaded.')
 
     try:
         train(net,

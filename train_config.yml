@@ -19,6 +19,7 @@ misc:
   shuffle: false
   seed: 42
   early_stop_loss: 5
+  model_path: models/pt-model-dsbowl2018-02-06-070940.pth
 model:
   lr: 0.01
   weight_decay: 0.0005

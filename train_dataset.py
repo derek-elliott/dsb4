@@ -30,6 +30,7 @@ class NucleiTrainDataset(Dataset):
         image_name = self.image_ids[idx]
         img_path = os.path.join(self.root_dir, image_name,
                                 'images', f'{image_name}.png')
+
         image = io.imread(img_path)[:, :, :self.channels]
 
         masks = []
