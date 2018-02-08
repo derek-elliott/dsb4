@@ -10,7 +10,7 @@ import torchvision.transforms.functional as F
 from PIL import Image, ImageOps
 from torch.utils.data import Dataset
 
-from skimage import io
+from skimage import io, exposure
 
 warnings.filterwarnings("ignore")
 
@@ -81,6 +81,13 @@ class TrainNormalize():
     def __call__(self, sample):
         image, masks, combined_mask = sample['image'], sample['masks'], sample['combined_mask']
         image = F.normalize(image, self.mean, self.std)
+        return {'image': image, 'combined_mask': combined_mask, 'masks': masks}
+
+class TrainGrayscale():
+    def __call__(self, sample):
+        image, masks, combined_mask = sample['image'], sample['masks'], sample['combined_mask']
+        num_output_channels = 1 if image.mode == 'L' else 3
+        image = F.to_grayscale(image, num_output_channels=num_output_channels)
         return {'image': image, 'combined_mask': combined_mask, 'masks': masks}
 
 
@@ -218,20 +225,6 @@ class RandomRotation():
 
         return {'image': image, 'combined_mask': combined_mask, 'masks': masks}
 
-
-class RandomGrayscale():
-    def __init__(self, prob=0.1):
-        self.prob = prob
-
-    def __call__(self, sample):
-        image, masks, combined_mask = sample['image'], sample['masks'], sample['combined_mask']
-
-        num_output_channels = 1 if image.mode == 'L' else 3
-
-        if random.random() < self.prob:
-            image = F.to_grayscale(image, num_output_channels=num_output_channels)
-        return {'image': image, 'combined_mask': combined_mask, 'masks': masks}
-
 class RandomInvert():
     def __init__(self, prob=0.2):
         self.prob = prob
@@ -241,4 +234,11 @@ class RandomInvert():
 
         if random.random() < self.prob:
             image = ImageOps.invert(image)
+        return {'image': image, 'combined_mask': combined_mask, 'masks': masks}
+
+class TrainCLAHEEqualize():
+    def __call__(self, sample):
+        image, masks, combined_mask = sample['image'], sample['masks'], sample['combined_mask']
+        image = exposure.equalize_adapthist(np.array(image))
+        image = Image.fromarray(image.astype('uint8'))
         return {'image': image, 'combined_mask': combined_mask, 'masks': masks}

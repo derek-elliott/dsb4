@@ -13,7 +13,8 @@ from torch.autograd import Variable
 from torch.utils.data import DataLoader
 
 import matplotlib.pyplot as plt
-from predict_dataset import (NucleiPredictDataset, PredictNormalize,
+from predict_dataset import (NucleiPredictDataset, PredictCLAHEEqualize,
+                             PredictGrayScale, PredictNormalize,
                              PredictRescale, PredictToTensor)
 from scipy import ndimage as ndi
 from skimage.color import label2rgb
@@ -27,7 +28,9 @@ from unet import UNet
 
 def predict(net, data_cfg, batch_size, channels, visualize=False, cutoff=0.5, use_gpu=False):
     transform = transforms.Compose(
-        [PredictRescale((data_cfg['img_height'], data_cfg['img_width'])),
+        [PredictCLAHEEqualize(),
+         PredictGrayScale(),
+         PredictRescale((data_cfg['img_height'], data_cfg['img_width'])),
          PredictToTensor(),
          PredictNormalize()])
 
@@ -61,18 +64,19 @@ def predict(net, data_cfg, batch_size, channels, visualize=False, cutoff=0.5, us
                                            for i in image['orig_size']), dtype=np.int32)
             for i, seg_mask in enumerate(masks):
                 combined_mask = np.maximum(combined_mask, (seg_mask * (i + 1)))
-            img_with_labels = label2rgb(combined_mask, image=np.squeeze(np.array(image['orig_image'])))
+            img_with_labels = label2rgb(
+                combined_mask, image=np.squeeze(np.array(image['orig_image'])))
 
             imshow(img_with_labels)
             plt.show()
     return predictions
+
 
 def unnormalize(image, mean, std):
     rev_norm = image
     for t, m, s in zip(rev_norm, mean, std):
         t.mul_(s).add_(m)
     return rev_norm
-
 
 
 def rle_encode(x):
@@ -120,7 +124,8 @@ def generate_submission(predictions, file_name, cutoff=0.5,):
         for image_id, run_length in zip(new_image_ids, rles):
             output_rle = ' '.join(str(item) for item in run_length)
             f.write(f'{image_id},{output_rle}\n')
-    tqdm.write(f'Submission with length {len(new_image_ids)} saved to {sub_path}.')
+    tqdm.write(
+        f'Submission with length {len(new_image_ids)} saved to {sub_path}.')
 
 
 if __name__ == '__main__':

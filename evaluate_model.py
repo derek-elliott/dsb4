@@ -1,8 +1,7 @@
 import numpy as np
 import torch
-import torch.nn.functional as F
 from torch.autograd import Variable
-from loss_functions import dice_coeff
+from loss import dice_coef
 
 
 def eval_net(net, dataset, use_gpu=False):
@@ -17,6 +16,6 @@ def eval_net(net, dataset, use_gpu=False):
 
         y_pred = net(X)
 
-        score = dice_coeff(torch.squeeze(y_pred), torch.squeeze(y))
+        score = dice_coef(y_pred, y)
         total += score
     return total / len(dataset)

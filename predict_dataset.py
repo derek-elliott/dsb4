@@ -6,7 +6,7 @@ import torch
 import torchvision.transforms.functional as F
 from torch.utils.data import Dataset
 
-from skimage import io, transform
+from skimage import io, transform, exposure
 
 warnings.filterwarnings("ignore")
 
@@ -62,4 +62,17 @@ class PredictNormalize():
     def __call__(self, sample):
         image, orig_image, orig_size, image_name = sample['image'], sample['orig_image'], sample['orig_size'], sample['file_name']
         image = F.normalize(image, self.mean, self.std)
+        return {'image': image, 'orig_image': orig_image, 'orig_size': orig_size, 'file_name': image_name}
+
+class PredictCLAHEEqualize():
+    def __call__(self, sample):
+        image, orig_image, orig_size, image_name = sample['image'], sample['orig_image'], sample['orig_size'], sample['file_name']
+        image = exposure.equalize_adapthist(image)
+        return {'image': image, 'orig_image': orig_image, 'orig_size': orig_size, 'file_name': image_name}
+
+class PredictGrayscale():
+    def __call__(self, sample):
+        image, orig_image, orig_size, image_name = sample['image'], sample['orig_image'], sample['orig_size'], sample['file_name']
+        num_output_channels = 1 if image.mode == 'L' else 3
+        image = F.to_grayscale(image, num_output_channels=num_output_channels)
         return {'image': image, 'orig_image': orig_image, 'orig_size': orig_size, 'file_name': image_name}
