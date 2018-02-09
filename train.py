@@ -131,8 +131,8 @@ if __name__ == '__main__':
 
     net = UNet(cfg['model']['channels'], cfg['model']['dropout'])
 
-    print('Training with CUDA')
     if options.use_gpu:
+        print('Training with CUDA')
         net.cuda()
         cudann.benchmark = True
 
