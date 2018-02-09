@@ -87,10 +87,10 @@ def train(net, data_cfg, model_cfg, epochs=50, batch_size=32, val_split=0.1, shu
             loss.backward()
             optimizer.step()
 
-        val_score = eval_net(net, val_data_loader, use_gpu)
-        # val_score = 0
+        # val_score = eval_net(net, val_data_loader, use_gpu)
+        val_score = 0
         tqdm.write(
-            f'Epoch finished --- Loss: {epoch_loss/(batch_size if batch_size != 1 else N_train)}  Dice Error: {float(val_score.data)}')
+            f'Epoch finished --- Loss: {epoch_loss/(batch_size if batch_size != 1 else N_train)}  Dice Error: {val_score}')
         if last_epoch_loss < epoch_loss:
             unchanged_loss_run += 1
         else:
