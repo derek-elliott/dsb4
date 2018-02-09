@@ -29,8 +29,7 @@ from unet import UNet
 
 def train(net, data_cfg, model_cfg, epochs=50, batch_size=32, val_split=0.1, shuffle=False, seed=42, early_stop_loss=5, use_gpu=False):
     transform = transforms.Compose(
-        [TrainCLAHEEqualize(),
-         TrainGrayscale(),
+        [TrainGrayscale(),
          RandomResizedCrop((data_cfg['img_height'], data_cfg['img_width'])),
          RandomHorizontalFlip(prob=0.5),
          RandomVerticalFlip(prob=0.5),

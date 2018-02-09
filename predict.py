@@ -14,7 +14,7 @@ from torch.utils.data import DataLoader
 
 import matplotlib.pyplot as plt
 from predict_dataset import (NucleiPredictDataset, PredictCLAHEEqualize,
-                             PredictGrayScale, PredictNormalize,
+                             PredictGrayscale, PredictNormalize,
                              PredictRescale, PredictToTensor)
 from scipy import ndimage as ndi
 from skimage.color import label2rgb
@@ -28,8 +28,7 @@ from unet import UNet
 
 def predict(net, data_cfg, batch_size, channels, visualize=False, cutoff=0.5, use_gpu=False):
     transform = transforms.Compose(
-        [PredictCLAHEEqualize(),
-         PredictGrayScale(),
+        [PredictGrayscale(),
          PredictRescale((data_cfg['img_height'], data_cfg['img_width'])),
          PredictToTensor(),
          PredictNormalize()])
