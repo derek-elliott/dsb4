@@ -25,13 +25,13 @@ class UNet(nn.Module):
         x2 = self.down1(x1)
         x3 = self.down2(x2)
         x4 = self.down3(x3)
-        x5 = self.down4(x4)
-        x6 = self.up1(x5, x4)
-        x7 = self.up2(x6, x3)
-        x8 = self.up3(x7, x2)
-        x9 = self.up4(x8, x1)
-        x10 = self.outconv1(x9)
-        x = self.outact(x10)
+        x = self.down4(x4)
+        x = self.up1(x, x4)
+        x = self.up2(x, x3)
+        x = self.up3(x, x2)
+        x = self.up4(x, x1)
+        x = self.outconv1(x)
+        x = self.outact(x)
         return x
 
 class Down(nn.Module):
